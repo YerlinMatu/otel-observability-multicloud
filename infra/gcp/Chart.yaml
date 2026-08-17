@@ -1,0 +1,7 @@
+apiVersion: v2
+name: otel-lab
+description: Microservicios y Collector para GKE
+type: application
+version: 0.1.0
+appVersion: "1.0"
+

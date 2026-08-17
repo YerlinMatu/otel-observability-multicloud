@@ -1,0 +1,6 @@
+projectId: REPLACE_ME
+images:
+  serviceA: REGION-docker.pkg.dev/PROJECT/otel/service-a:latest
+  serviceB: REGION-docker.pkg.dev/PROJECT/otel/service-b:latest
+replicas: 2
+

@@ -1,0 +1,75 @@
+apiVersion: v1
+kind: Namespace
+metadata: {name: observability}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata: {name: otel-collector-config, namespace: observability}
+data:
+  collector.yaml: |
+{{ .Files.Get "files/collector-gcp.yaml" | indent 4 }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: otel-collector, namespace: observability}
+spec:
+  replicas: 2
+  selector: {matchLabels: {app: otel-collector}}
+  template:
+    metadata: {labels: {app: otel-collector}}
+    spec:
+      serviceAccountName: otel-collector
+      containers:
+        - name: collector
+          image: otel/opentelemetry-collector-contrib:0.132.0
+          args: ["--config=/conf/collector.yaml"]
+          env: [{name: GCP_PROJECT_ID, value: "{{ .Values.projectId }}"}]
+          ports: [{containerPort: 4317}, {containerPort: 4318}, {containerPort: 8889}]
+          resources: {requests: {cpu: 100m, memory: 256Mi}, limits: {cpu: 500m, memory: 512Mi}}
+          volumeMounts: [{name: config, mountPath: /conf}]
+      volumes: [{name: config, configMap: {name: otel-collector-config}}]
+---
+apiVersion: v1
+kind: Service
+metadata: {name: otel-collector, namespace: observability}
+spec:
+  selector: {app: otel-collector}
+  ports: [{name: grpc, port: 4317}, {name: http, port: 4318}, {name: prometheus, port: 8889}]
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: otel-collector
+  namespace: observability
+  annotations:
+    iam.gke.io/gcp-service-account: "otel-collector@{{ .Values.projectId }}.iam.gserviceaccount.com"
+---
+{{- range $name, $image := dict "service-a" .Values.images.serviceA "service-b" .Values.images.serviceB }}
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: {{ $name }}, namespace: observability}
+spec:
+  replicas: {{ $.Values.replicas }}
+  selector: {matchLabels: {app: {{ $name }}}}
+  template:
+    metadata: {labels: {app: {{ $name }}}}
+    spec:
+      containers:
+        - name: {{ $name }}
+          image: {{ $image }}
+          env:
+            - {name: SERVICE_NAME, value: {{ $name }}}
+            - {name: OTEL_EXPORTER_OTLP_ENDPOINT, value: "http://otel-collector:4317"}
+            {{- if eq $name "service-a" }}
+            - {name: SERVICE_B_URL, value: "http://service-b:8081"}
+            {{- end }}
+          ports: [{containerPort: {{ if eq $name "service-a" }}8080{{ else }}8081{{ end }}}]
+---
+apiVersion: v1
+kind: Service
+metadata: {name: {{ $name }}, namespace: observability}
+spec:
+  selector: {app: {{ $name }}}
+  ports: [{port: {{ if eq $name "service-a" }}8080{{ else }}8081{{ end }}}]
+---
+{{- end }}

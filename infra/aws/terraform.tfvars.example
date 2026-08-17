@@ -1,0 +1,6 @@
+region          = "us-east-1"
+vpc_id          = "vpc-xxxxxxxx"
+private_subnets = ["subnet-aaaaaaaa", "subnet-bbbbbbbb"]
+service_a_image = "ACCOUNT.dkr.ecr.us-east-1.amazonaws.com/service-a:latest"
+service_b_image = "ACCOUNT.dkr.ecr.us-east-1.amazonaws.com/service-b:latest"
+

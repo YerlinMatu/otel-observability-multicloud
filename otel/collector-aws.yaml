@@ -1,0 +1,24 @@
+receivers:
+  otlp:
+    protocols:
+      grpc: {endpoint: 0.0.0.0:4317}
+      http: {endpoint: 0.0.0.0:4318}
+processors:
+  memory_limiter: {check_interval: 1s, limit_mib: 384, spike_limit_mib: 96}
+  resource:
+    attributes:
+      - {key: cloud.provider, value: aws, action: upsert}
+      - {key: deployment.environment, value: production, action: insert}
+  batch: {}
+exporters:
+  awsxray: {region: "${env:AWS_REGION}"}
+  awscloudwatchlogs:
+    log_group_name: /otel/microservices
+    log_stream_name: collector
+    region: "${env:AWS_REGION}"
+  prometheus: {endpoint: 0.0.0.0:8889}
+service:
+  pipelines:
+    traces: {receivers: [otlp], processors: [memory_limiter, resource, batch], exporters: [awsxray]}
+    metrics: {receivers: [otlp], processors: [memory_limiter, resource, batch], exporters: [prometheus]}
+    logs: {receivers: [otlp], processors: [memory_limiter, resource, batch], exporters: [awscloudwatchlogs]}

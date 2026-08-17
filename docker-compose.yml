@@ -1,0 +1,55 @@
+services:
+  service-a:
+    build: ./services
+    command: ["uvicorn", "service_a:app", "--host", "0.0.0.0", "--port", "8080"]
+    environment:
+      SERVICE_NAME: service-a
+      SERVICE_B_URL: http://service-b:8081
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SDK_DISABLED: ${OTEL_SDK_DISABLED:-false}
+      DEPLOYMENT_ENVIRONMENT: local
+    ports: ["8080:8080", "9464:9464"]
+    depends_on: [service-b, otel-collector]
+  service-b:
+    build: ./services
+    command: ["uvicorn", "service_b:app", "--host", "0.0.0.0", "--port", "8081"]
+    environment:
+      SERVICE_NAME: service-b
+      DB_PATH: /data/orders.db
+      METRICS_PORT: "9465"
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SDK_DISABLED: ${OTEL_SDK_DISABLED:-false}
+      DEPLOYMENT_ENVIRONMENT: local
+    volumes: ["service-b-data:/data"]
+    ports: ["8081:8081", "9465:9465"]
+    depends_on: [otel-collector]
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.132.0
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes: ["./otel/collector-local.yaml:/etc/otelcol/config.yaml:ro"]
+    ports: ["4317:4317", "4318:4318", "8888:8888", "8889:8889"]
+    depends_on: [jaeger, loki]
+  jaeger:
+    image: jaegertracing/all-in-one:1.71.0
+    environment: {COLLECTOR_OTLP_ENABLED: "true"}
+    ports: ["16686:16686"]
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    volumes: ["./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro"]
+    ports: ["9090:9090"]
+  loki:
+    image: grafana/loki:3.5.3
+    command: ["-config.file=/etc/loki/local-config.yaml"]
+    ports: ["3100:3100"]
+  grafana:
+    image: grafana/grafana:12.1.0
+    # Editor is intentional for this local academic demo so Explore is usable
+    # without login. Use authenticated least-privilege roles in production.
+    environment: {GF_SECURITY_ADMIN_PASSWORD: admin, GF_AUTH_ANONYMOUS_ENABLED: "true", GF_AUTH_ANONYMOUS_ORG_ROLE: Editor}
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports: ["3000:3000"]
+    depends_on: [prometheus, loki, jaeger]
+volumes:
+  service-b-data:
