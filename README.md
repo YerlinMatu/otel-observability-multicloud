@@ -35,7 +35,10 @@ En Jaeger, seleccione `service-a` y abra una traza: debe contener el span HTTP e
 
 ## Reporte técnico
 
-El entregable académico está disponible en [`report/Reporte_Tecnico_OpenTelemetry_Actividad-2.2.pdf`](report/Reporte_Tecnico_OpenTelemetry_Actividad-2.2.pdf).
+El entregable académico actualizado, con evidencia real de GCP GKE y placeholder explícito para AWS, está disponible en:
+
+- [`report/Reporte_Tecnico_OpenTelemetry_Actividad-2.2.pdf`](report/Reporte_Tecnico_OpenTelemetry_Actividad-2.2.pdf)
+- [`report/Reporte_Tecnico_OpenTelemetry_Actividad-2.2.docx`](report/Reporte_Tecnico_OpenTelemetry_Actividad-2.2.docx)
 
 ## Tres señales y correlación
 
