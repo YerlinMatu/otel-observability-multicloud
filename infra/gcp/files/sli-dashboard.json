@@ -1,0 +1,12 @@
+{
+  "title": "Microservicios - SLIs y Collector", "uid": "otel-sli", "schemaVersion": 41,
+  "time": {"from": "now-15m", "to": "now"}, "refresh": "5s",
+  "panels": [
+    {"id":1,"title":"SLI 1 - Throughput (req/s)","type":"timeseries","gridPos":{"x":0,"y":0,"w":12,"h":8},"targets":[{"expr":"sum(rate(http_server_duration_milliseconds_count[1m])) by (job)","legendFormat":"{{job}}"}]},
+    {"id":2,"title":"SLI 2 - Latencia p99 (ms)","type":"timeseries","gridPos":{"x":12,"y":0,"w":12,"h":8},"targets":[{"expr":"histogram_quantile(0.99, sum(rate(http_server_duration_milliseconds_bucket[5m])) by (le, job))","legendFormat":"{{job}}"}]},
+    {"id":3,"title":"SLI 3 - Error rate 5xx","type":"timeseries","gridPos":{"x":0,"y":8,"w":12,"h":8},"targets":[{"expr":"(sum(rate(http_server_duration_milliseconds_count{http_status_code=~\"5..\"}[5m])) / clamp_min(sum(rate(http_server_duration_milliseconds_count[5m])), 1)) or vector(0)","legendFormat":"errors"}]},
+    {"id":4,"title":"SLI 4 - Disponibilidad","type":"stat","gridPos":{"x":12,"y":8,"w":12,"h":8},"targets":[{"expr":"avg(up{job=~\"service-.*\"}) * 100","legendFormat":"% UP"}]},
+    {"id":5,"title":"CPU de servicios (%)","type":"timeseries","gridPos":{"x":0,"y":16,"w":12,"h":8},"targets":[{"expr":"sum(rate(process_cpu_seconds_total{job=~\"service-.*\"}[5m])) by (job) * 100","legendFormat":"{{job}}"}]},
+    {"id":6,"title":"Errores OTel Collector","type":"timeseries","gridPos":{"x":12,"y":16,"w":12,"h":8},"targets":[{"expr":"(sum(rate(otelcol_exporter_send_failed_spans_total[5m])) + sum(rate(otelcol_exporter_send_failed_log_records_total[5m])) + sum(rate(otelcol_exporter_send_failed_metric_points_total[5m]))) or vector(0)","legendFormat":"fallos/s"}]}
+  ]
+}

@@ -10,10 +10,26 @@ processors:
       - {key: cloud.provider, value: gcp, action: upsert}
   batch: {}
 exporters:
-  googlecloud: {project: "${env:GCP_PROJECT_ID}"}
+  googlecloud:
+    project: "${env:GCP_PROJECT_ID}"
+    log:
+      default_log_name: opentelemetry.io/collector-exported-log
+  otlp/jaeger:
+    endpoint: jaeger:4317
+    tls: {insecure: true}
   prometheus: {endpoint: 0.0.0.0:8889}
+  otlphttp/loki: {endpoint: http://loki:3100/otlp}
+extensions:
+  health_check: {endpoint: 0.0.0.0:13133}
 service:
+  extensions: [health_check]
+  telemetry:
+    metrics:
+      readers:
+        - pull:
+            exporter:
+              prometheus: {host: 0.0.0.0, port: 8888}
   pipelines:
-    traces: {receivers: [otlp], processors: [memory_limiter, resource, batch], exporters: [googlecloud]}
+    traces: {receivers: [otlp], processors: [memory_limiter, resource, batch], exporters: [otlp/jaeger, googlecloud]}
     metrics: {receivers: [otlp], processors: [memory_limiter, resource, batch], exporters: [prometheus, googlecloud]}
-    logs: {receivers: [otlp], processors: [memory_limiter, resource, batch], exporters: [googlecloud]}
+    logs: {receivers: [otlp], processors: [memory_limiter, resource, batch], exporters: [otlphttp/loki, googlecloud]}

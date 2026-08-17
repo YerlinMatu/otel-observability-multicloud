@@ -57,4 +57,6 @@ Las carpetas `infra/gcp` e `infra/aws` son bases reproducibles y requieren compl
 
 ## Evidencias para entregar
 
-Consulte [EVIDENCE-CHECKLIST.md](EVIDENCE-CHECKLIST.md). El repositorio incluye capturas reales del stack local en `report/evidence/`; las evidencias cloud requieren cuentas autorizadas y no se falsifican.
+Consulte [EVIDENCE-CHECKLIST.md](EVIDENCE-CHECKLIST.md). El repositorio incluye capturas reales del stack local y de una ejecución temporal en GCP GKE dentro de `report/evidence/`.
+
+La ejecución real en GCP GKE, sus verificaciones y cuatro capturas cloud están documentadas en [CLOUD-EVIDENCE.md](CLOUD-EVIDENCE.md).

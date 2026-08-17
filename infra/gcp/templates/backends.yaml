@@ -1,0 +1,119 @@
+apiVersion: v1
+kind: ConfigMap
+metadata: {name: prometheus-config, namespace: observability}
+data:
+  prometheus.yml: |
+{{ .Files.Get "files/prometheus.yml" | indent 4 }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: prometheus, namespace: observability}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: prometheus}}
+  template:
+    metadata: {labels: {app: prometheus}}
+    spec:
+      containers:
+        - name: prometheus
+          image: prom/prometheus:v3.5.0
+          args: ["--config.file=/etc/prometheus/prometheus.yml"]
+          ports: [{name: http, containerPort: 9090}]
+          resources: {requests: {cpu: 100m, memory: 256Mi}, limits: {cpu: 500m, memory: 512Mi}}
+          volumeMounts: [{name: config, mountPath: /etc/prometheus}]
+      volumes: [{name: config, configMap: {name: prometheus-config}}]
+---
+apiVersion: v1
+kind: Service
+metadata: {name: prometheus, namespace: observability}
+spec:
+  selector: {app: prometheus}
+  ports: [{name: http, port: 9090}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: jaeger, namespace: observability}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: jaeger}}
+  template:
+    metadata: {labels: {app: jaeger}}
+    spec:
+      containers:
+        - name: jaeger
+          image: jaegertracing/all-in-one:1.71.0
+          env: [{name: COLLECTOR_OTLP_ENABLED, value: "true"}]
+          ports: [{name: ui, containerPort: 16686}, {name: otlp-grpc, containerPort: 4317}]
+          resources: {requests: {cpu: 100m, memory: 256Mi}, limits: {cpu: 500m, memory: 512Mi}}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: jaeger, namespace: observability}
+spec:
+  selector: {app: jaeger}
+  ports: [{name: ui, port: 16686}, {name: otlp-grpc, port: 4317}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: loki, namespace: observability}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: loki}}
+  template:
+    metadata: {labels: {app: loki}}
+    spec:
+      containers:
+        - name: loki
+          image: grafana/loki:3.5.3
+          args: ["-config.file=/etc/loki/local-config.yaml"]
+          ports: [{name: http, containerPort: 3100}]
+          resources: {requests: {cpu: 100m, memory: 256Mi}, limits: {cpu: 500m, memory: 512Mi}}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: loki, namespace: observability}
+spec:
+  selector: {app: loki}
+  ports: [{name: http, port: 3100}]
+---
+apiVersion: v1
+kind: ConfigMap
+metadata: {name: grafana-provisioning, namespace: observability}
+data:
+  datasources.yaml: |
+{{ .Files.Get "files/grafana-datasources.yaml" | indent 4 }}
+  dashboards.yaml: |
+{{ .Files.Get "files/grafana-dashboards.yaml" | indent 4 }}
+  sli-dashboard.json: |
+{{ .Files.Get "files/sli-dashboard.json" | indent 4 }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: grafana, namespace: observability}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: grafana}}
+  template:
+    metadata: {labels: {app: grafana}}
+    spec:
+      containers:
+        - name: grafana
+          image: grafana/grafana:12.1.0
+          env:
+            - {name: GF_SECURITY_ADMIN_PASSWORD, value: admin}
+            - {name: GF_AUTH_ANONYMOUS_ENABLED, value: "true"}
+            - {name: GF_AUTH_ANONYMOUS_ORG_ROLE, value: Editor}
+          ports: [{name: http, containerPort: 3000}]
+          resources: {requests: {cpu: 100m, memory: 256Mi}, limits: {cpu: 500m, memory: 512Mi}}
+          volumeMounts:
+            - {name: config, mountPath: /etc/grafana/provisioning/datasources/datasources.yaml, subPath: datasources.yaml}
+            - {name: config, mountPath: /etc/grafana/provisioning/dashboards/dashboards.yaml, subPath: dashboards.yaml}
+            - {name: config, mountPath: /var/lib/grafana/dashboards/sli-dashboard.json, subPath: sli-dashboard.json}
+      volumes: [{name: config, configMap: {name: grafana-provisioning}}]
+---
+apiVersion: v1
+kind: Service
+metadata: {name: grafana, namespace: observability}
+spec:
+  selector: {app: grafana}
+  ports: [{name: http, port: 3000}]
