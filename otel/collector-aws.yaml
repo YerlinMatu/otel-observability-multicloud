@@ -16,9 +16,19 @@ exporters:
     log_group_name: /otel/microservices
     log_stream_name: collector
     region: "${env:AWS_REGION}"
-  prometheus: {endpoint: 0.0.0.0:8889}
+  # CloudWatch EMF: convierte métricas OTLP en Embedded Metric Format y las
+  # publica como métricas nativas de CloudWatch, sin necesitar un Prometheus
+  # adicional corriendo en ECS. resource_to_telemetry_conversion conserva
+  # service.name/deployment.environment como dimensiones.
+  awsemf:
+    region: "${env:AWS_REGION}"
+    namespace: ObservabilityLab
+    log_group_name: /otel/microservices/metrics
+    log_stream_name: collector
+    resource_to_telemetry_conversion:
+      enabled: true
 service:
   pipelines:
     traces: {receivers: [otlp], processors: [memory_limiter, resource, batch], exporters: [awsxray]}
-    metrics: {receivers: [otlp], processors: [memory_limiter, resource, batch], exporters: [prometheus]}
+    metrics: {receivers: [otlp], processors: [memory_limiter, resource, batch], exporters: [awsemf]}
     logs: {receivers: [otlp], processors: [memory_limiter, resource, batch], exporters: [awscloudwatchlogs]}

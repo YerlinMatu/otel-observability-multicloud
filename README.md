@@ -35,7 +35,7 @@ En Jaeger, seleccione `service-a` y abra una traza: debe contener el span HTTP e
 
 ## Reporte técnico
 
-El entregable académico actualizado, con evidencia real de GCP GKE y placeholder explícito para AWS, está disponible en:
+El entregable académico final, con evidencia real de ejecución en Docker local, GCP GKE y AWS ECS Fargate, está disponible en:
 
 - [`report/Reporte_Tecnico_OpenTelemetry_Actividad-2.2.pdf`](report/Reporte_Tecnico_OpenTelemetry_Actividad-2.2.pdf)
 - [`report/Reporte_Tecnico_OpenTelemetry_Actividad-2.2.docx`](report/Reporte_Tecnico_OpenTelemetry_Actividad-2.2.docx)
@@ -43,7 +43,7 @@ El entregable académico actualizado, con evidencia real de GCP GKE y placeholde
 ## Tres señales y correlación
 
 - **Trazas:** W3C Trace Context se propaga automáticamente por HTTP; OTLP llega al Collector.
-- **Métricas:** cada servicio expone `/metrics`; Prometheus recopila contadores e histogramas OTel.
+- **Métricas:** cada servicio expone `/metrics` (Prometheus scrapea directo en local/GCP) y además empuja por OTLP al Collector cada 15s (necesario en AWS, donde CloudWatch EMF recibe lo que el Collector reenvía).
 - **Logs:** JSON a stdout y OTLP; cada registro incluye `trace_id`, `span_id`, `service.name` y `deployment.environment`.
 
 ## Benchmark
@@ -56,10 +56,10 @@ Ejecuta dos variantes con la misma imagen: `OTEL_SDK_DISABLED=true` y `false`. L
 
 ## Despliegue cloud
 
-Las carpetas `infra/gcp` e `infra/aws` son bases reproducibles y requieren completar proyecto/región, red, repositorio de imágenes, credenciales e IAM. Revise con `terraform validate`/`helm lint` antes de aplicar. No ejecute `terraform apply` sin revisar costos.
+Las carpetas `infra/gcp` e `infra/aws` son reproducibles y ambas fueron desplegadas realmente en clústeres/servicios temporales (ver evidencia abajo). Requieren completar proyecto/región, red, repositorio de imágenes, credenciales e IAM antes de aplicar. Revise con `terraform validate`/`helm lint` antes de aplicar, y destruya los recursos (`terraform destroy`) apenas termine de capturar evidencia para no generar costos.
 
 ## Evidencias para entregar
 
-Consulte [EVIDENCE-CHECKLIST.md](EVIDENCE-CHECKLIST.md). El repositorio incluye capturas reales del stack local y de una ejecución temporal en GCP GKE dentro de `report/evidence/`.
+Consulte [EVIDENCE-CHECKLIST.md](EVIDENCE-CHECKLIST.md). El repositorio incluye capturas reales del stack local, de una ejecución temporal en GCP GKE y de una ejecución temporal en AWS ECS Fargate dentro de `report/evidence/`.
 
-La ejecución real en GCP GKE, sus verificaciones y cuatro capturas cloud están documentadas en [CLOUD-EVIDENCE.md](CLOUD-EVIDENCE.md).
+La ejecución real en GCP GKE, sus verificaciones y capturas están documentadas en [CLOUD-EVIDENCE.md](CLOUD-EVIDENCE.md). La ejecución real en AWS ECS Fargate, incluyendo dos fallas encontradas y corregidas durante el despliegue, está documentada en [AWS-EVIDENCE.md](AWS-EVIDENCE.md).
