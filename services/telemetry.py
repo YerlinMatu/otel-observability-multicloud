@@ -6,11 +6,13 @@ import sys
 from opentelemetry import metrics, trace
 from opentelemetry._logs import set_logger_provider
 from opentelemetry.exporter.otlp.proto.grpc._log_exporter import OTLPLogExporter
+from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.exporter.prometheus import PrometheusMetricReader
 from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
 from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
 from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
@@ -39,8 +41,20 @@ def configure_telemetry(app):
         tracer_provider = TracerProvider(resource=resource)
         tracer_provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter(insecure=True)))
         trace.set_tracer_provider(tracer_provider)
-        metric_reader = PrometheusMetricReader()
-        metrics.set_meter_provider(MeterProvider(resource=resource, metric_readers=[metric_reader]))
+        # Reader 1 (pull): expone /metrics en formato Prometheus. Es lo que
+        # scrapean Prometheus local/GCP directamente, sin pasar por el
+        # Collector.
+        prometheus_reader = PrometheusMetricReader()
+        # Reader 2 (push): envia metricas al Collector por OTLP cada 15s.
+        # Necesario para AWS, donde el pipeline de metricas del Collector
+        # (awsemf -> CloudWatch) solo recibe datos si algo se los empuja;
+        # a diferencia de Prometheus, CloudWatch no hace scraping.
+        otlp_metric_reader = PeriodicExportingMetricReader(
+            OTLPMetricExporter(insecure=True), export_interval_millis=15000
+        )
+        metrics.set_meter_provider(
+            MeterProvider(resource=resource, metric_readers=[prometheus_reader, otlp_metric_reader])
+        )
         logger_provider = LoggerProvider(resource=resource)
         logger_provider.add_log_record_processor(BatchLogRecordProcessor(OTLPLogExporter(insecure=True)))
         set_logger_provider(logger_provider)

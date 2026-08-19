@@ -1,6 +1,13 @@
-region          = "us-east-1"
-vpc_id          = "vpc-xxxxxxxx"
-private_subnets = ["subnet-aaaaaaaa", "subnet-bbbbbbbb"]
+# Region: us-east-1 (Virginia) es la region por defecto del laboratorio.
+region = "us-east-1"
+
+# vpc_id y public_subnets: usar la VPC por defecto de la cuenta (todas sus
+# subredes ya son publicas, con ruta a un Internet Gateway).
+# Obtenerlos con:
+#   aws ec2 describe-vpcs --filters Name=is-default,Values=true --query 'Vpcs[0].VpcId' --output text
+#   aws ec2 describe-subnets --filters Name=vpc-id,Values=<vpc-id> --query 'Subnets[].SubnetId' --output text
+vpc_id         = "vpc-xxxxxxxx"
+public_subnets = ["subnet-aaaaaaaa", "subnet-bbbbbbbb"]
+
 service_a_image = "ACCOUNT.dkr.ecr.us-east-1.amazonaws.com/service-a:latest"
 service_b_image = "ACCOUNT.dkr.ecr.us-east-1.amazonaws.com/service-b:latest"
-

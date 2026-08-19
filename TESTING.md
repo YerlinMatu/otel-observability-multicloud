@@ -24,6 +24,6 @@ La prueba detectó y permitió corregir el uso de `connection.execute`, que el i
 - Las variantes `OTEL_SDK_DISABLED=true/false` aparecen en ambos contenedores al renderizar Compose.
 - El JSON del dashboard es válido y su regex extrae un `trace_id` de una línea real de log.
 
-## Limitaciones
+## Ejecución cloud posterior
 
-El stack Docker completo fue ejecutado y verificado: siete contenedores activos, cuatro targets Prometheus UP, trazas Jaeger de 12 spans, logs Loki correlacionados y dashboard Grafana de seis paneles. El benchmark de 60 segundos por condición obtuvo p99 545.23 ms sin OTel y 559.52 ms con OTel. No se desplegó en GCP/AWS porque requiere credenciales autorizadas y puede generar costos; la IaC sí fue validada.
+El stack Docker completo fue ejecutado y verificado: siete contenedores activos, cuatro targets Prometheus UP, trazas Jaeger de 12 spans, logs Loki correlacionados y dashboard Grafana de seis paneles. El benchmark de 60 segundos por condición obtuvo p99 545.23 ms sin OTel y 559.52 ms con OTel. Posteriormente se desplegó realmente en GCP GKE (Autopilot, us-central1) y en AWS ECS Fargate (us-east-1), con evidencia real de las tres señales en ambos entornos; ver `CLOUD-EVIDENCE.md` y `AWS-EVIDENCE.md`. Los clústeres y servicios cloud se destruyeron inmediatamente después de capturar evidencia para no generar costos. El benchmark de overhead solo se ejecutó sobre el stack local, no se repitió por entorno cloud.
